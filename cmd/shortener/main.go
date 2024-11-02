@@ -33,13 +33,13 @@ func run() error {
 
 func checkMethod(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		shortenUrl(w, r)
+		encodeURL(w, r)
 	} else if r.Method == http.MethodGet {
-		getUrl(w, r)
+		decodeURL(w, r)
 	}
 }
 
-func shortenUrl(w http.ResponseWriter, req *http.Request) {
+func encodeURL(w http.ResponseWriter, req *http.Request) {
 	contentType := req.Header.Get("Content-Type")
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -64,7 +64,7 @@ func shortenUrl(w http.ResponseWriter, req *http.Request) {
 	_, _ = w.Write([]byte("http://localhost:8080/" + id + "\r\n"))
 }
 
-func getUrl(w http.ResponseWriter, req *http.Request) {
+func decodeURL(w http.ResponseWriter, req *http.Request) {
 	id := req.URL.Path[len("/"):]
 	_, ok := urls[id]
 	if id == "" || !ok {
