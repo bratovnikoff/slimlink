@@ -39,14 +39,13 @@ func checkMethod(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func encodeURL(w http.ResponseWriter, req *http.Request) {
-	contentType := req.Header.Get("Content-Type")
-	body, err := io.ReadAll(req.Body)
+func encodeURL(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		panic(err)
 	}
 
-	if req.URL.Path != "/" || contentType != "text/plain" || len(body) == 0 {
+	if r.URL.Path != "/" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -61,19 +60,17 @@ func encodeURL(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 
-	_, _ = w.Write([]byte("http://localhost:8080/" + id + "\r\n"))
+	w.Write([]byte("http://" + r.Host + "/" + id))
 }
 
-func decodeURL(w http.ResponseWriter, req *http.Request) {
-	id := req.URL.Path[len("/"):]
-	_, ok := urls[id]
+func decodeURL(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Path[len("/"):]
+	url, ok := urls[id]
 	if id == "" || !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	addr := urls[id]
-
-	w.Header().Set("Location", addr)
+	w.Header().Set("Location", url)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
