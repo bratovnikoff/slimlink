@@ -35,7 +35,7 @@ func checkMethod(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		encodeURL(w, r)
 	} else if r.Method == http.MethodGet {
-		decodeURL(w, r)
+		resolveURL(w, r)
 	}
 }
 
@@ -45,7 +45,7 @@ func encodeURL(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	if r.URL.Path != "/" {
+	if r.URL.Path != "/" || r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -63,10 +63,10 @@ func encodeURL(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("http://" + r.Host + "/" + id))
 }
 
-func decodeURL(w http.ResponseWriter, r *http.Request) {
+func resolveURL(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Path[len("/"):]
 	url, ok := urls[id]
-	if id == "" || !ok {
+	if id == "" || !ok || r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
