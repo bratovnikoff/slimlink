@@ -2,58 +2,46 @@ package main
 
 import (
 	"io"
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/sqids/sqids-go"
 )
 
 var (
-	urls map[string]string
-	s    *sqids.Sqids
-)
-
-func main() {
-	if err := run(); err != nil {
-		panic(err)
-	}
-}
-
-func run() error {
 	urls = make(map[string]string)
 	s, _ = sqids.New(sqids.Options{
 		Alphabet:  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.+",
 		MinLength: 8,
 	})
+)
 
+func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", checkMethod)
-
-	return http.ListenAndServe(`:8080`, mux)
+	mux.HandleFunc("/", mainHandler)
+	log.Fatal(http.ListenAndServe(`:8080`, mux))
 }
 
-func checkMethod(w http.ResponseWriter, r *http.Request) {
+func mainHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		encodeURL(w, r)
+		encodeURLHandler(w, r)
 	} else if r.Method == http.MethodGet {
-		resolveURL(w, r)
+		resolveURLHandler(w, r)
+	} else {
+		http.Error(w, "This request is not allowed.", http.StatusBadRequest)
 	}
 }
 
-func encodeURL(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
+func encodeURLHandler(w http.ResponseWriter, r *http.Request) {
+	body, _ := io.ReadAll(r.Body)
 
-	if r.URL.Path != "/" || r.Method != http.MethodPost {
+	if r.URL.Path != "/" || r.Method != http.MethodPost || len(body) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	id, err := s.Encode([]uint64{uint64(len(urls))})
-	if err != nil {
-		panic(err)
-	}
+	id, _ := s.Encode([]uint64{uint64(len(urls))})
 
 	urls[id] = string(body)
 
@@ -63,10 +51,10 @@ func encodeURL(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("http://" + r.Host + "/" + id))
 }
 
-func resolveURL(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[len("/"):]
+func resolveURLHandler(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/")
 	url, ok := urls[id]
-	if id == "" || !ok || r.Method != http.MethodGet {
+	if r.Method != http.MethodGet || !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

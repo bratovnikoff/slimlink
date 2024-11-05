@@ -3,13 +3,13 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
-	"github.com/sqids/sqids-go"
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_encodeURL(t *testing.T) {
+func Test_encodeURLHandler(t *testing.T) {
 
 	tests := []struct {
 		method       string
@@ -22,23 +22,18 @@ func Test_encodeURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.method, func(t *testing.T) {
-			urls = make(map[string]string)
-			s, _ = sqids.New(sqids.Options{
-				Alphabet:  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.+",
-				MinLength: 8,
-			})
-
-			r := httptest.NewRequest(tt.method, "/", nil)
+			body := strings.NewReader("https://www.youtube.com/")
+			r := httptest.NewRequest(tt.method, "/", body)
 			w := httptest.NewRecorder()
 
-			encodeURL(w, r)
+			encodeURLHandler(w, r)
 
 			assert.Equal(t, tt.expectedCode, w.Code)
 		})
 	}
 }
 
-func Test_resolveURL(t *testing.T) {
+func Test_resolveURLHadler(t *testing.T) {
 	tests := []struct {
 		method       string
 		request      string
@@ -51,11 +46,12 @@ func Test_resolveURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.method, func(t *testing.T) {
-			urls = map[string]string{"bbbbbbbb": "ffff"}
+			urls["bbbbbbbb"] = "ffff"
+
 			r := httptest.NewRequest(tt.method, tt.request, nil)
 			w := httptest.NewRecorder()
 
-			resolveURL(w, r)
+			resolveURLHandler(w, r)
 
 			assert.Equal(t, tt.expectedCode, w.Code)
 		})
